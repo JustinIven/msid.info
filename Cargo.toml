@@ -1,0 +1,28 @@
+[package]
+name = "msid-info"
+version = "2.0.0"
+edition = "2021"
+description = "OSINT lookup service for Microsoft Entra ID tenants, running on Cloudflare Workers"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+worker = "0.8.6"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+quick-xml = "0.38"
+futures = "0.3"
+percent-encoding = "2"
+console_error_panic_hook = "0.1"
+
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1
+# `strip` is deliberately off: it drops the `target_features` custom section, and without it
+# wasm-bindgen cannot tell that reference-types are available and fails to emit catch wrappers.
+# worker-build runs wasm-opt afterwards, which handles size.
+strip = false

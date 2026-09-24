@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Consolas, "Liberation Mono", monospace;
+  --font-sans: var(--font-mono);
+
+  --color-canvas: #08090c;
+  --color-surface: #0d0f14;
+  --color-surface-2: #12151c;
+  --color-line: #1c2029;
+  --color-line-bright: #2b3140;
+  --color-ink: #c9d1d9;
+  --color-ink-bright: #e6edf3;
+  --color-muted: #6e7681;
+  --color-accent: #4cc2ff;
+  --color-accent-dim: #1f4d66;
+  --color-ok: #3fb950;
+  --color-warn: #d29922;
+  --color-danger: #f85149;
+  --color-magenta: #d2a8ff;
+
+  --radius-sharp: 2px;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-mono text-[13px] leading-relaxed antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(76, 194, 255, 0.07), transparent),
+      linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 100% 100%, 64px 64px, 64px 64px;
+    background-attachment: fixed;
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    @apply bg-accent-dim text-ink-bright;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-line-bright;
+    border-radius: 0;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply border border-line bg-surface/80 backdrop-blur-sm;
+  }
+
+  .panel-header {
+    @apply flex items-center gap-2 border-b border-line px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-muted;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

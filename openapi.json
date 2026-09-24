@@ -1,0 +1,283 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "msid.info API",
+    "version": "2.0.0",
+    "summary": "Passive OSINT lookups for Microsoft Entra ID tenants.",
+    "description": "Resolves a domain or UPN to its Microsoft Entra ID tenant by querying public, unauthenticated Microsoft endpoints. No authentication is required. Requests are rate limited per IP; solving the Turnstile challenge in the web UI raises the limit.",
+    "license": { "name": "MIT" }
+  },
+  "servers": [{ "url": "https://msid.info" }],
+  "paths": {
+    "/api/v1/lookup/{query}": {
+      "get": {
+        "operationId": "lookup",
+        "summary": "Look up a tenant by domain or UPN",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "path",
+            "required": true,
+            "description": "A domain (`contoso.com`) or a user principal name (`user@contoso.com`). A bare domain is probed as `admin@<domain>`.",
+            "schema": { "type": "string", "maxLength": 320 },
+            "examples": {
+              "domain": { "value": "microsoft.com" },
+              "upn": { "value": "user@contoso.com" }
+            }
+          },
+          {
+            "name": "refresh",
+            "in": "query",
+            "required": false,
+            "description": "Set to `1` to bypass the cache.",
+            "schema": { "type": "string", "enum": ["0", "1"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant information.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/LookupResponse" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "404": { "$ref": "#/components/responses/Problem" },
+          "429": { "$ref": "#/components/responses/Problem" },
+          "502": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/v1/lookup": {
+      "get": {
+        "operationId": "lookupByQueryParam",
+        "summary": "Look up a tenant using the `q` query parameter",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "maxLength": 320 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant information.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/LookupResponse" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "operationId": "health",
+        "summary": "Liveness probe",
+        "responses": {
+          "200": {
+            "description": "Service is up.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string" },
+                    "version": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config": {
+      "get": {
+        "operationId": "config",
+        "summary": "Public frontend configuration",
+        "responses": {
+          "200": {
+            "description": "Configuration consumed by the web UI.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "turnstileSitekey": { "type": "string" },
+                    "turnstileEnabled": { "type": "boolean" },
+                    "cacheTtlSeconds": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openapi.json": {
+      "get": {
+        "operationId": "openapi",
+        "summary": "This document",
+        "responses": { "200": { "description": "OpenAPI document." } }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "Problem": {
+        "description": "Error, encoded as RFC 9457 problem details.",
+        "content": {
+          "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } }
+        }
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": ["type", "title", "status", "detail"],
+        "properties": {
+          "type": { "type": "string", "format": "uri" },
+          "title": { "type": "string" },
+          "status": { "type": "integer" },
+          "detail": { "type": "string" }
+        }
+      },
+      "LookupResponse": {
+        "type": "object",
+        "required": ["query", "tenantId", "tenantEnvironment", "domains", "raw", "meta"],
+        "properties": {
+          "query": {
+            "type": "object",
+            "properties": {
+              "input": { "type": "string" },
+              "domain": { "type": "string" },
+              "username": { "type": "string" },
+              "usernameProvided": { "type": "boolean" }
+            }
+          },
+          "tenantId": { "type": "string", "format": "uuid" },
+          "tenantName": { "type": ["string", "null"] },
+          "defaultDomain": {
+            "type": ["string", "null"],
+            "description": "Requires a configured Microsoft Graph app registration. Null when unavailable; `meta.degraded` explains why."
+          },
+          "tenantEnvironment": {
+            "type": "object",
+            "properties": {
+              "tenantRegionScope": { "type": ["string", "null"] },
+              "tenantRegionSubScope": { "type": ["string", "null"] },
+              "cloudInstanceDisplayName": { "type": "string" },
+              "cloudInstance": { "type": ["string", "null"] },
+              "audienceUrn": { "type": ["string", "null"] }
+            }
+          },
+          "nameSpaceType": {
+            "type": ["string", "null"],
+            "description": "`Managed`, `Federated` or `Unknown`."
+          },
+          "federationInfo": {
+            "type": "object",
+            "properties": {
+              "brandName": { "type": ["string", "null"] },
+              "protocol": { "type": ["string", "null"] },
+              "globalVersion": { "type": ["integer", "null"] },
+              "metadataUrl": { "type": ["string", "null"] },
+              "activeAuthenticationUrl": { "type": ["string", "null"] }
+            }
+          },
+          "loginExperiences": {
+            "type": "object",
+            "description": "Company branding configured on the tenant sign-in page.",
+            "properties": {
+              "isSignupAllowed": { "type": ["boolean", "null"] },
+              "locale": { "type": ["integer", "null"] },
+              "bannerLogo": { "type": ["string", "null"] },
+              "tileLogo": { "type": ["string", "null"] },
+              "tileDarkLogo": { "type": ["string", "null"] },
+              "illustration": { "type": ["string", "null"] },
+              "backgroundColor": { "type": ["string", "null"] },
+              "boilerPlateText": { "type": ["string", "null"] },
+              "userIdLabel": { "type": ["string", "null"] },
+              "keepMeSignedInDisabled": { "type": ["boolean", "null"] },
+              "useTransparentLightBox": { "type": ["boolean", "null"] }
+            }
+          },
+          "userInfo": {
+            "type": "object",
+            "description": "Only populated for clouds that expose GetCredentialType.",
+            "properties": {
+              "username": { "type": ["string", "null"] },
+              "displayName": { "type": ["string", "null"] },
+              "state": { "type": ["string", "null"] },
+              "isManaged": { "type": ["boolean", "null"] },
+              "throttleStatus": { "type": ["string", "null"] },
+              "credentials": {
+                "type": "object",
+                "properties": {
+                  "preferredCredential": { "type": ["string", "null"] },
+                  "hasPassword": { "type": ["boolean", "null"] },
+                  "hasAccessPass": { "type": ["boolean", "null"] },
+                  "hasDesktopSso": { "type": ["boolean", "null"] },
+                  "hasRemoteNGC": { "type": ["boolean", "null"] },
+                  "hasFido": { "type": ["boolean", "null"] },
+                  "hasCertAuth": { "type": ["boolean", "null"] },
+                  "otcNotAutoSent": { "type": ["boolean", "null"] },
+                  "parameters": { "type": "object", "additionalProperties": true }
+                }
+              },
+              "callMetadata": {
+                "type": "object",
+                "properties": {
+                  "longRunningTransactionPartition": { "type": ["string", "null"] },
+                  "region": { "type": ["string", "null"] },
+                  "scaleUnit": { "type": ["string", "null"] },
+                  "isLongRunningTransaction": { "type": ["boolean", "null"] }
+                }
+              }
+            }
+          },
+          "domains": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Every domain federated with the tenant, from Autodiscover."
+          },
+          "raw": {
+            "type": "object",
+            "description": "Verbatim upstream payloads.",
+            "additionalProperties": true
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "durationMs": { "type": "integer" },
+              "cache": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "string", "enum": ["MISS", "HIT-EDGE", "HIT-KV"] },
+                  "ttlSeconds": { "type": "integer" }
+                }
+              },
+              "degraded": { "type": "array", "items": { "type": "string" } },
+              "calls": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "method": { "type": "string" },
+                    "url": { "type": "string" },
+                    "status": { "type": ["integer", "null"] },
+                    "durationMs": { "type": "integer" },
+                    "ok": { "type": "boolean" },
+                    "error": { "type": ["string", "null"] }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

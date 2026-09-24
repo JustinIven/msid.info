@@ -1,0 +1,12 @@
+# Local development secrets for `wrangler dev`. Copy to `.dev.vars` and fill in.
+# All of these are OPTIONAL - the Worker degrades gracefully when they are absent.
+
+# Cloudflare Turnstile secret key (pairs with TURNSTILE_SITEKEY in wrangler.jsonc).
+TURNSTILE_SECRET=""
+
+# Microsoft Entra app registration used for the Graph tenantInformation lookup.
+# Needs the CrossTenantInformation.ReadBasic.All application permission.
+# Without these, `defaultDomain` is reported as null and the response is flagged as degraded.
+GRAPH_TENANT_ID=""
+GRAPH_CLIENT_ID=""
+GRAPH_CLIENT_SECRET=""
