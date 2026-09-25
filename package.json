@@ -3,7 +3,7 @@
   "private": true,
   "version": "2.0.0",
   "scripts": {
-    "build:web": "npm --prefix web run build",
+    "build:web": "npm --prefix web clean-install --progress=false && npm --prefix web run build",
     "build": "npm run build:web && cargo install -q worker-build --version 0.8.6 && worker-build --release",
     "dev": "npm run build:web && wrangler dev",
     "dev:web": "npm --prefix web run dev",
