@@ -12,7 +12,7 @@
     "lint": "cargo fmt --check && cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings"
   },
   "devDependencies": {
-    "wrangler": "^4.45.0"
+    "wrangler": "^4.147.0"
   },
   "allowScripts": {
     "workerd@1.20260921.1": true,
